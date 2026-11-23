@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mod Creator Final</title>
+
+<style>
+body {
+  margin: 0;
+  background: #10141f;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  background: #202b42;
+  padding: 15px;
+  text-align: center;
+}
+
+h1 { color: #63e6be; }
+
+main {
+  max-width: 800px;
+  margin: auto;
+  padding: 15px;
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+button {
+  background: #263650;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover { background: #36517c; }
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #536580;
+  background: #1c2535;
+  color: white;
+  box-sizing: border-box;
+}
+
+#editor {
+  display: none;
+  margin-top: 20px;
+  padding: 15px;
+  background: #202b42;
+  border-radius: 10px;
+}
+
+.item {
+  background: #202b42;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+}
+
+#resultado {
+  background: #080c14;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Mod Creator</h1>
+  <p>Crie seus próprios mods de Minecraft!</p>
+</header>
+
+<main>
+
+<h2>O que você quer criar?</h2>
+
+<div class="menu">
+  <button onclick="abrir('Espada')">⚔️ Espadas</button>
+  <button onclick="abrir('Mob')">🐉 Mobs</button>
+  <button onclick="abrir('Dimensão')">🌌 Dimensões</button>
+  <button onclick="abrir('Ferramenta')">⛏️ Ferramentas</button>
+  <button onclick="abrir('Armadura')">🛡️ Armaduras</button>
+  <button onclick="abrir('Item')">🎒 Itens</button>
+  <button onclick="abrir('Bloco')">🧱 Blocos</button>
+</div>
+
+<section id="editor">
+  <h2 id="titulo">Criar objeto</h2>
+
+  <label>Nome</label>
+  <input id="nome" placeholder="Nome do objeto">
+
+  <div id="campoDano">
+    <label>Dano da espada</label>
+    <input id="dano" type="number" min="0"
+      placeholder="Qualquer valor positivo">
+  </div>
+
+  <div id="campoDurabilidade">
+    <label>Durabilidade</label>
+    <input id="durabilidade" type="number" min="1"
+      placeholder="Durabilidade">
+  </div>
+
+  <div id="campoEfeito">
+    <label>Efeito especial</label>
+    <select id="efeito">
+      <option>Nenhum</option>
+      <option>Fogo</option>
+      <option>Veneno</option>
+      <option>Raio</option>
+      <option>Lentidão</option>
+      <option>Regeneração</option>
+    </select>
+  </div>
+
+  <div id="campoVida">
+    <label>Vida do jogador (máximo 30 corações)</label>
+    <input id="vida" type="number" min="1" max="30" value="10">
+  </div>
+
+  <label>Material</label>
+  <select id="material">
+    <option>Madeira</option>
+    <option>Pedra</option>
+    <option>Ferro</option>
+    <option>Ouro</option>
+    <option>Diamante</option>
+    <option>Netherite</option>
+    <option>Personalizado</option>
+  </select>
+
+  <button onclick="criar()">Criar objeto</button>
+  <button onclick="fechar()">Voltar</button>
+</section>
+
+<h2>Meus objetos</h2>
+<div id="lista"></div>
+
+<h2>Vida dos jogadores</h2>
+<p>Vida máxima: 30 corações.</p>
+
+<label>Quantidade de corações</label>
+<input id="vidaJogador" type="number" min="1" max="30" value="10">
+
+<button onclick="salvarVida()">Definir vida</button>
+
+<p id="statusVida">Vida atual: 10 corações</p>
+
+<h2>Arquivo do mod</h2>
+<button onclick="baixar()">Baixar arquivo JSON</button>
+
+<pre id="resultado">Nenhum objeto criado.</pre>
+
+</main>
+
+<script>
+let tipoAtual = "";
+let objetos = [];
+let vidaJogador = 10;
+
+function abrir(tipo) {
+  tipoAtual = tipo;
+
+  document.getElementById("editor").style.display = "block";
+  document.getElementById("titulo").textContent =
+    "Criar " + tipo;
+
+  document.getElementById("campoDano").style.display =
+    tipo === "Espada" ? "block" : "none";
+
+  document.getElementById("campoDurabilidade").style.display =
+    ["Espada", "Ferramenta", "Armadura"].includes(tipo)
+      ? "block" : "none";
+
+  document.getElementById("campoEfeito").style.display =
+    ["Espada", "Mob", "Armadura"].includes(tipo)
+      ? "block" : "none";
+
+  document.getElementById("campoVida").style.display =
+    tipo === "Mob" ? "block" : "none";
+
+  document.getElementById("nome").value = "";
+  document.getElementById("dano").value = "";
+  document.getElementById("durabilidade").value = "";
+  document.getElementById("vida").value = 10;
+
+  document.getElementById("editor").scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
+function fechar() {
+  document.getElementById("editor").style.display = "none";
+}
+
+function criar() {
+  const nome = document.getElementById("nome").value.trim();
+  const dano = document.getElementById("dano").value;
+  const durabilidade =
+    document.getElementById("durabilidade").value;
+  const efeito = document.getElementById("efeito").value;
+  const material = document.getElementById("material").value;
+
+  if (!nome) {
+    alert("Digite um nome!");
+    return;
+  }
+
+  const objeto = {
+    tipo: tipoAtual,
+    nome: nome,
+    material: material
+  };
+
+  if (tipoAtual === "Espada") {
+    if (dano === "" || Number(dano) < 0 ||
+        !Number.isFinite(Number(dano))) {
+      alert("Digite um dano válido!");
+      return;
+    }
+
+    objeto.dano = Number(dano);
+    objeto.efeito = efeito;
+  }
+
+  if (["Espada", "Ferramenta", "Armadura"].includes(tipoAtual)) {
+    if (durabilidade === "" || Number(durabilidade) < 1 ||
+        !Number.isFinite(Number(durabilidade))) {
+      alert("Digite uma durabilidade válida!");
+      return;
+    }
+
+    objeto.durabilidade = Number(durabilidade);
+  }
+
+  if (tipoAtual === "Mob") {
+    objeto.vida = Math.min(30, Math.max(1,
+      Number(document.getElementById("vida").value)));
+    objeto.efeito = efeito;
+  }
+
+  objetos.push(objeto);
+  atualizar();
+  fechar();
+}
+
+function salvarVida() {
+  const valor = Number(document.getElementById("vidaJogador").value);
+
+  if (!Number.isFinite(valor)) {
+    alert("Digite um valor válido!");
+    return;
+  }
+
+  vidaJogador = Math.min(30, Math.max(1, valor));
+
+  document.getElementById("vidaJogador").value = vidaJogador;
+  document.getElementById("statusVida").textContent =
+    "Vida atual: " + vidaJogador + " corações";
+}
+
+function atualizar() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  objetos.forEach((objeto, indice) => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    const texto = document.createElement("span");
+    texto.textContent = JSON.stringify(objeto);
+
+    const apagar = document.createElement("button");
+    apagar.textContent = "Excluir";
+    apagar.style.marginTop = "10px";
+
+    apagar.onclick = () => {
+      objetos.splice(indice, 1);
+      atualizar();
+    };
+
+    div.appendChild(texto);
+    div.appendChild(document.createElement("br"));
+    div.appendChild(apagar);
+    lista.appendChild(div);
+  });
+
+  document.getElementById("resultado").textContent =
+    JSON.stringify({
+      vidaMaxima: 30,
+      vidaJogador: vidaJogador,
+      objetos: objetos
+    }, null, 2);
+}
+
+function baixar() {
+  const dados = JSON.stringify({
+    vidaMaxima: 30,
+    vidaJogador: vidaJogador,
+    objetos: objetos
+  }, null, 2);
+
+  const arquivo = new Blob([dados], {
+    type: "application/json"
+  });
+
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(arquivo);
+
+  link.href = url;
+  link.download = "meu-mod.json";
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
